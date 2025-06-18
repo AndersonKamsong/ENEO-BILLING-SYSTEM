@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ENEO Energy Billing</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>⚡ ENEO Energy Billing System</h1>
+        <p>Calculate your energy consumption and bills instantly</p>
+      </div>
+
+      <div class="main-grid">
+        <div class="card">
+          <h2>💰 Amount to kWh Calculator</h2>
+          <div class="form-group">
+            <label>Meter Number</label>
+            <input type="text" id="meter1" placeholder="Enter meter number" />
+          </div>
+          <div class="form-group">
+            <label>Amount to Pay (FCFA)</label>
+            <input type="number" id="amount" placeholder="Enter amount" />
+          </div>
+          <button class="btn" onclick="calculateKwh()">Calculate kWh</button>
+          <div id="result1" class="result" style="display: none"></div>
+        </div>
+
+        <div class="card">
+          <h2>⚡ kWh to Amount Calculator</h2>
+          <div class="form-group">
+            <label>Meter Number</label>
+            <input type="text" id="meter2" placeholder="Enter meter number" />
+          </div>
+          <div class="form-group">
+            <label>Energy to Consume (kWh)</label>
+            <input type="number" id="kwh" placeholder="Enter kWh" />
+          </div>
+          <button class="btn" onclick="calculateAmount()">
+            Calculate Amount
+          </button>
+          <div id="result2" class="result" style="display: none"></div>
+        </div>
+      </div>
+
+      <div class="payment-section">
+        <h2>💳 Payment Options</h2>
+        <p>Complete your payment using Mobile Money or Orange Money</p>
+        <div class="payment-buttons">
+          <button class="btn momo-btn" onclick="openPaymentModal('momo')">
+            Pay with MTN Mobile Money
+          </button>
+          <button class="btn om-btn" onclick="openPaymentModal('om')">
+            Pay with Orange Money
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="chat-toggle" onclick="toggleChat()">💬</button>
+
+    <div class="chatbot" id="chatbot">
+      <div class="chatbot-header">
+        <h3>🤖 ENEO Assistant</h3>
+        <button
+          onclick="toggleChat()"
+          style="background: none; border: none; color: white; font-size: 20px"
+        >
+          ×
+        </button>
+      </div>
+      <div class="user-info" id="userInfo" style="display: none">
+        <span>👋 Hello, <strong id="userName">Guest</strong>!</span>
+      </div>
+      <div class="language-selector">
+        <button class="lang-btn active" onclick="setLanguage('en')">
+          🇺🇸 EN
+        </button>
+        <button class="lang-btn" onclick="setLanguage('fr')">🇫🇷 FR</button>
+        <button class="lang-btn" onclick="setLanguage('es')">🇪🇸 ES</button>
+        <button class="lang-btn" onclick="setLanguage('de')">🇩🇪 DE</button>
+      </div>
+      <div class="chatbot-messages" id="messages"></div>
+      <div class="typing-indicator" id="typingIndicator">
+        🤖 Assistant is searching ENEO website...
+      </div>
+      <div class="chatbot-input">
+        <div class="voice-controls">
+          <button
+            class="voice-btn"
+            id="voiceBtn"
+            onclick="toggleVoiceRecognition()"
+          >
+            🎤 Voice
+          </button>
+          <button class="voice-btn" onclick="toggleSpeech()">
+            🔊 <span id="speechToggle">ON</span>
+          </button>
+          <span id="voiceStatus" style="font-size: 12px; color: #666"></span>
+        </div>
+        <input
+          type="text"
+          id="chatInput"
+          placeholder="Ask me anything..."
+          onkeypress="handleChatKeypress(event)"
+        />
+        <button
+          class="btn"
+          onclick="sendMessage()"
+          style="margin-top: 10px; width: 100%"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+
+    <div id="paymentModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3>📱 Complete Your Payment</h3>
+        <form id="paymentForm" onsubmit="startPayment(event)">
+          <label for="phone">Enter your phone number:</label>
+          <input type="text" id="phone" required placeholder="6xxxxxxxx" />
+          <input type="hidden" id="paymentType" />
+          <button type="submit" class="btn">Pay Now</button>
+        </form>
+        <div id="paymentStatus" style="margin-top: 10px"></div>
+      </div>
+    </div>
+
+    <!-- Load external chatbot script -->
+    <script src="chatbot.js"></script>
+    
+    <script>
+      let paymentInterval = null;
+      function openPaymentModal(type) {
+        document.getElementById("paymentModal").style.display = "block";
+        document.getElementById("paymentType").value = type;
+      }
+
+      function closeModal() {
+        document.getElementById("paymentModal").style.display = "none";
+        clearInterval(paymentInterval);
+        document.getElementById("paymentStatus").innerHTML = "";
+      }
+      async function startPayment(event) {
+        event.preventDefault();
+          verifyPayment("3cad52e3-7778-4251-b49a-3f96c9bc5e02");
+
+        // const phone = document.getElementById("phone").value;
+        // const type = document.getElementById("paymentType").value;
+        // const statusDiv = document.getElementById("paymentStatus");
+
+        // const transactionId = Date.now().toString(); // unique reference
+
+        // statusDiv.innerHTML = "🔄 Processing payment...";
+
+        // // if (type === "momo") {
+        //  let payment = await initiateMomoPayment(phone, transactionId);
+        // // } else {
+        // //   // initiateOrangePayment(phone, transactionId);
+        // // }
+
+        // // Auto verify every 10 seconds
+        // console.log(payment)
+        // paymentInterval = setInterval(() => {
+        //   verifyPayment(payment.reference);
+        // }, 10000);
+      }
+
+      async function initiateMomoPayment(phone) {
+        const  paymentData = {
+          amount: "100", // Get from calculation
+          currency: "XAF",
+          phone: phone,
+          externalId: Date.now().toString(),
+          payer: { partyIdType: "MSISDN", partyId: phone },
+          payerMessage: "Energy bill payment",
+          payeeNote: "ENEO bill payment",
+        };
+
+        try {
+          const response = await fetch("/api/payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(paymentData),
+          });
+
+          const data = await response.json();
+          console.log("Payment initiated:", data);
+          return data
+        } catch (err) {
+          console.error("Failed to initiate MoMo:", err);
+          return null
+        }
+      }
+
+      async function initiateOrangePayment(phone, transactionId) {
+        const paymentData = {
+          phone,
+          amount: "1000", // replace with actual amount
+          reference: transactionId,
+        };
+
+        try {
+          const response = await fetch("/api/payment/orange", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(paymentData),
+          });
+
+          const data = await response.json();
+          console.log("Orange payment initiated:", data);
+        } catch (err) {
+          console.error("Failed to initiate Orange:", err);
+        }
+      }
+
+      async function verifyPayment(reference) {
+        const statusDiv = document.getElementById("paymentStatus");
+
+        try {
+          console.log(reference)
+          const response = await fetch(`/api/verify/${reference}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(reference),
+          });
+          const data = await response.json();
+          console.log(data,"data")
+          if (data.status === "SUCCESSFUL") {
+            statusDiv.innerHTML = "✅ Payment successful!";
+            clearInterval(paymentInterval);
+          } else if (data.status === "failed") {
+            statusDiv.innerHTML = "❌ Payment failed. Please try again.";
+            clearInterval(paymentInterval);
+          } else {
+            statusDiv.innerHTML = "⏳ Waiting for payment confirmation...";
+          }
+        } catch (err) {
+          console.error("Error checking payment:", err);
+          statusDiv.innerHTML = "⚠️ Error verifying payment.";
+          clearInterval(paymentInterval);
+        }
+      }
+
+      // Sample meter database
+      const meterDB = {
+        12345678: { tariff: "residential", debt: 5000, rate: 79.36 },
+        87654321: { tariff: "commercial", debt: 0, rate: 95.23 },
+        11111111: { tariff: "industrial", debt: 15000, rate: 85.67 },
+        22222222: { tariff: "residential", debt: 2500, rate: 79.36 },
+      };
+
+      const VAT_RATE = 0.1925; // 19.25%
+
+      function validateMeter(meterNumber) {
+        return meterDB[meterNumber] || null;
+      }
+
+      function calculateKwh() {
+        const meter = document.getElementById("meter1").value;
+        const amount = parseFloat(document.getElementById("amount").value);
+        const result = document.getElementById("result1");
+
+        if (!meter || !amount) {
+          result.innerHTML = '<p class="error">Please fill all fields</p>';
+          result.style.display = "block";
+          return;
+        }
+
+        const meterData = validateMeter(meter);
+        if (!meterData) {
+          result.innerHTML =
+            '<p class="error">Meter number not found in database</p>';
+          result.style.display = "block";
+          return;
+        }
+
+        const availableAmount = Math.max(0, amount - meterData.debt);
+        const amountWithoutVAT = availableAmount / (1 + VAT_RATE);
+        const kwh = amountWithoutVAT / meterData.rate;
+        const vat = availableAmount - amountWithoutVAT;
+
+        result.innerHTML = `
+                <h3>Calculation Results</h3>
+                <p><strong>Meter:</strong> ${meter}</p>
+                <p><strong>Tariff:</strong> ${meterData.tariff}</p>
+                <p><strong>Rate:</strong> ${meterData.rate} FCFA/kWh</p>
+                <p><strong>Debt:</strong> ${meterData.debt} FCFA</p>
+                <p><strong>Available Amount:</strong> ${availableAmount} FCFA</p>
+                <p><strong>VAT (19.25%):</strong> ${vat.toFixed(2)} FCFA</p>
+                <p><strong>Energy to Receive:</strong> ${kwh.toFixed(2)} kWh</p>
+            `;
+        result.style.display = "block";
+      }
+
+      function calculateAmount() {
+        const meter = document.getElementById("meter2").value;
+        const kwh = parseFloat(document.getElementById("kwh").value);
+        const result = document.getElementById("result2");
+
+        if (!meter || !kwh) {
+          result.innerHTML = '<p class="error">Please fill all fields</p>';
+          result.style.display = "block";
+          return;
+        }
+
+        const meterData = validateMeter(meter);
+        if (!meterData) {
+          result.innerHTML =
+            '<p class="error">Meter number not found in database</p>';
+          result.style.display = "block";
+          return;
+        }
+
+        const baseAmount = kwh * meterData.rate;
+        const vat = baseAmount * VAT_RATE;
+        const totalAmount = baseAmount + vat + meterData.debt;
+
+        result.innerHTML = `
+                <h3>Calculation Results</h3>
+                <p><strong>Meter:</strong> ${meter}</p>
+                <p><strong>Tariff:</strong> ${meterData.tariff}</p>
+                <p><strong>Rate:</strong> ${meterData.rate} FCFA/kWh</p>
+                <p><strong>Energy Cost:</strong> ${baseAmount.toFixed(
+                  2
+                )} FCFA</p>
+                <p><strong>VAT (19.25%):</strong> ${vat.toFixed(2)} FCFA</p>
+                <p><strong>Debt:</strong> ${meterData.debt} FCFA</p>
+                <p><strong>Total Amount:</strong> ${totalAmount.toFixed(
+                  2
+                )} FCFA</p>
+            `;
+        result.style.display = "block";
+      }
+
+      // Payment functions
+      function payWithMomo() {
+        const phone = prompt("Enter your MTN Mobile Money number:");
+        if (phone) {
+          alert("Redirecting to MTN Mobile Money payment...");
+          // Integrate MTN MoMo API here
+          initiateMomoPayment(phone);
+        }
+      }
+
+      function payWithOrange() {
+        const phone = prompt("Enter your Orange Money number:");
+        if (phone) {
+          alert("Redirecting to Orange Money payment...");
+          // Integrate Orange Money API here
+          initiateOrangePayment(phone);
+        }
+      }
+    </script>
+  </body>
+</html>
