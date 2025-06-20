@@ -132,7 +132,7 @@
 
     <!-- Load external chatbot script -->
     <script src="chatbot.js"></script>
-    
+
     <script>
       let paymentInterval = null;
       function openPaymentModal(type) {
@@ -147,31 +147,38 @@
       }
       async function startPayment(event) {
         event.preventDefault();
-          verifyPayment("3cad52e3-7778-4251-b49a-3f96c9bc5e02");
+        // verifyPayment("3cad52e3-7778-4251-b49a-3f96c9bc5e02");
 
-        // const phone = document.getElementById("phone").value;
-        // const type = document.getElementById("paymentType").value;
-        // const statusDiv = document.getElementById("paymentStatus");
+        const phone = document.getElementById("phone").value;
+        const type = document.getElementById("paymentType").value;
+        const statusDiv = document.getElementById("paymentStatus");
 
-        // const transactionId = Date.now().toString(); // unique reference
+        const transactionId = Date.now().toString(); // unique reference
+        // Reset styles
+        statusDiv.style.padding = "12px";
+        statusDiv.style.marginTop = "10px";
+        statusDiv.style.borderRadius = "8px";
+        statusDiv.style.fontWeight = "bold";
+        statusDiv.style.color = "#fff"; // Default text color
+        statusDiv.innerHTML = "🔄 Processing payment...";
+        statusDiv.style.backgroundColor = "#ffc107"; // Yellow/Orange
+        statusDiv.style.color = "#212529";
+        let payment = await initiateMomoPayment(phone, transactionId);
 
-        // statusDiv.innerHTML = "🔄 Processing payment...";
-
-        // // if (type === "momo") {
-        //  let payment = await initiateMomoPayment(phone, transactionId);
-        // // } else {
-        // //   // initiateOrangePayment(phone, transactionId);
-        // // }
-
-        // // Auto verify every 10 seconds
-        // console.log(payment)
-        // paymentInterval = setInterval(() => {
-        //   verifyPayment(payment.reference);
-        // }, 10000);
+        statusDiv.innerHTML =
+          "⏳ Waiting for payment confirmation...<br><strong>Use the USSD code:</strong> " +
+          payment.ussd_code +
+          " on your phone to validate.";
+        // Dark text for yellow bg
+        // Auto verify every 10 seconds
+        console.log(payment);
+        paymentInterval = setInterval(() => {
+          verifyPayment(payment.reference, payment.ussd_code);
+        }, 10000);
       }
 
       async function initiateMomoPayment(phone) {
-        const  paymentData = {
+        const paymentData = {
           amount: "100", // Get from calculation
           currency: "XAF",
           phone: phone,
@@ -190,58 +197,53 @@
 
           const data = await response.json();
           console.log("Payment initiated:", data);
-          return data
+          return data;
         } catch (err) {
           console.error("Failed to initiate MoMo:", err);
-          return null
+          return null;
         }
       }
 
-      async function initiateOrangePayment(phone, transactionId) {
-        const paymentData = {
-          phone,
-          amount: "1000", // replace with actual amount
-          reference: transactionId,
-        };
-
-        try {
-          const response = await fetch("/api/payment/orange", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(paymentData),
-          });
-
-          const data = await response.json();
-          console.log("Orange payment initiated:", data);
-        } catch (err) {
-          console.error("Failed to initiate Orange:", err);
-        }
-      }
-
-      async function verifyPayment(reference) {
+      async function verifyPayment(reference, code) {
         const statusDiv = document.getElementById("paymentStatus");
 
+        // Reset styles
+        statusDiv.style.padding = "12px";
+        statusDiv.style.marginTop = "10px";
+        statusDiv.style.borderRadius = "8px";
+        statusDiv.style.fontWeight = "bold";
+        statusDiv.style.color = "#fff"; // Default text color
+
         try {
-          console.log(reference)
+          console.log(reference);
           const response = await fetch(`/api/verify/${reference}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(reference),
           });
           const data = await response.json();
-          console.log(data,"data")
+          console.log(data, "data");
+
           if (data.status === "SUCCESSFUL") {
             statusDiv.innerHTML = "✅ Payment successful!";
+            statusDiv.style.backgroundColor = "#28a745"; // Green
             clearInterval(paymentInterval);
-          } else if (data.status === "failed") {
-            statusDiv.innerHTML = "❌ Payment failed. Please try again.";
+          } else if (data.status === "FAILED") {
+            statusDiv.innerHTML =
+              "❌ Payment failed. Please try again. <br>Reason: " + data.reason;
+            statusDiv.style.backgroundColor = "#dc3545"; // Red
             clearInterval(paymentInterval);
           } else {
-            statusDiv.innerHTML = "⏳ Waiting for payment confirmation...";
+            statusDiv.innerHTML =
+              "⏳ Waiting for payment confirmation...<br><strong>Use the USSD code:</strong> " +
+              code +
+              " on your phone to validate.";
+            statusDiv.style.backgroundColor = "#ffc107"; // Yellow/Orange
+            statusDiv.style.color = "#212529"; // Dark text for yellow bg
           }
         } catch (err) {
           console.error("Error checking payment:", err);
           statusDiv.innerHTML = "⚠️ Error verifying payment.";
+          statusDiv.style.backgroundColor = "#6c757d"; // Gray
           clearInterval(paymentInterval);
         }
       }
@@ -335,25 +337,6 @@
                 )} FCFA</p>
             `;
         result.style.display = "block";
-      }
-
-      // Payment functions
-      function payWithMomo() {
-        const phone = prompt("Enter your MTN Mobile Money number:");
-        if (phone) {
-          alert("Redirecting to MTN Mobile Money payment...");
-          // Integrate MTN MoMo API here
-          initiateMomoPayment(phone);
-        }
-      }
-
-      function payWithOrange() {
-        const phone = prompt("Enter your Orange Money number:");
-        if (phone) {
-          alert("Redirecting to Orange Money payment...");
-          // Integrate Orange Money API here
-          initiateOrangePayment(phone);
-        }
       }
     </script>
   </body>
